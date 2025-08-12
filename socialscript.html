@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Look Script — single file</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#141821; --text:#e6e8ee; --sub:#a9b0bf; --muted:#6b7280;
+    --accent:#17c3e2; --accent2:#f59e0b; --ok:#10b981; --bad:#ef4444; --border:#202534;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--text); font:16px system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; line-height:1.4;}
+  .wrap{max-width:980px; margin:24px auto; padding:0 16px;}
+  header{margin-bottom:16px; text-align:center}
+  h1{font-size:28px; margin:6px 0 4px;}
+  .kicker{color:var(--accent); font-size:12px; letter-spacing:.12em; text-transform:uppercase}
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px;}
+  label{font-size:13px; color:var(--sub); display:block; margin-top:8px;}
+  input[type="text"],input[type="password"],input[type="number"],select,textarea{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text);
+  }
+  textarea{min-height:320px; white-space:pre-wrap}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text); cursor:pointer;}
+  .btn.primary{background:var(--text); color:#0b0e14; font-weight:700;}
+  .btn:disabled{opacity:.6; cursor:not-allowed}
+  .hint{color:var(--muted); font-size:12px}
+  .error{display:none; margin-top:8px; padding:8px 10px; border:1px solid #7f1d1d; background:#3f1d1d; color:#fecaca; border-radius:8px;}
+  .error.show{display:block}
+  .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center}
+  .thumbs img{width:84px; height:84px; object-fit:cover; border:1px solid var(--border); border-radius:8px;}
+  .tag{display:inline-block; font-size:12px; border:1px solid var(--border); padding:2px 6px; border-radius:999px; color:var(--sub)}
+  .bar{height:8px; background:#0b0e14; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+  .bar span{display:block; height:100%; background:var(--accent2); width:0%}
+  .flex{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .mt-8{margin-top:16px} .mt-12{margin-top:24px}
+  .right{float:right}
+  small{color:var(--sub)}
+  .foot{color:var(--muted); font-size:12px; text-align:center; margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Private beta • All-local with your Gemini key</div>
+    <h1>Your Look — 12-Minute YouTube Script</h1>
+    <small>We analyze 20+ signals from your photos using a structured rubric, then write a script in your requested voice. Educational, not medical advice.</small>
+    <div style="margin-top:10px;">
+    <a href="index.html" class="btn">← Back to Look Score</a>
+  </div>
+</header>
+
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label>Upload photos (3–7 JPG/PNG)</label>
+        <div class="flex">
+          <button id="btnPick" class="btn">Choose photos</button>
+          <button id="btnClear" class="btn">Clear</button>
+          <span class="tag" id="countTag">0 selected</span>
+        </div>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png" multiple style="display:none">
+        <div id="thumbs" class="thumbs"><small>No photos yet.</small></div>
+      </div>
+      <div>
+        <label>Gemini API key</label>
+        <input id="apiKey" type="password" placeholder="AIza...">
+        <small class="hint">Stored in your browser only.</small>
+
+        <div class="row mt-8">
+          <div>
+            <label>Sex</label>
+            <select id="sex"><option value="female">Woman</option><option value="male">Man</option></select>
+          </div>
+          <div>
+            <label>Age</label>
+            <input id="age" type="number" min="10" max="100" value="30">
+          </div>
+        </div>
+
+        <label class="mt-8">Ethnicity (optional)</label>
+        <input id="ethnicity" type="text" placeholder="e.g., Vietnamese">
+
+        <label class="mt-8">Beauty standard</label>
+        <select id="region">
+          <option value="US">US</option>
+          <option value="EastAsia">East Asia</option>
+          <option value="SEAsia">SE Asia</option>
+          <option value="EU">EU</option>
+          <option value="LATAM">LATAM</option>
+          <option value="MENA">MENA</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row-3 mt-12">
+      <div>
+        <label>Angle</label>
+        <select id="angle">
+          <option value="general">General audience</option>
+          <option value="dating">Dating glow-up</option>
+          <option value="executive">Executive presence</option>
+          <option value="on_camera">On-camera / media</option>
+        </select>
+      </div>
+      <div>
+        <label>Boundaries</label>
+        <div class="flex">
+          <label><input type="checkbox" id="noSurg"> No surgery</label>
+          <label><input type="checkbox" id="noInject"> No injectables</label>
+          <label><input type="checkbox" id="lowBudget"> &lt;$200/mo</label>
+        </div>
+      </div>
+      <div>
+        <label>Extras</label>
+        <div class="flex">
+          <label><input type="checkbox" id="addBroll"> Include B-roll & on-screen text cues</label>
+          <label><input type="checkbox" id="addSrt"> Include timestamped beats (SRT-ready)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 flex">
+      <button id="btnBuild" class="btn primary">Generate 12-minute Script</button>
+      <button id="btnCopy"  class="btn">Copy</button>
+      <button id="btnSave"  class="btn">Download .txt</button>
+      <span class="bar" style="flex:1"><span id="prog"></span></span>
+    </div>
+    <div id="err" class="error"></div>
+  </section>
+
+  <section class="panel mt-12">
+    <label>Script output</label>
+    <textarea id="out" placeholder="Your 12-minute script will appear here…"></textarea>
+  </section>
+
+  <div class="foot">No uploads to our server. Requests go directly from your browser to Google’s Gemini endpoint using your key.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============ Helpers ============
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const fileInput = $('#fileInput');
+  const btnPick = $('#btnPick');
+  const btnClear = $('#btnClear');
+  const thumbs = $('#thumbs');
+  const countTag = $('#countTag');
+  const apiKeyEl = $('#apiKey');
+  const sexEl = $('#sex');
+  const ageEl = $('#age');
+  const ethnicityEl = $('#ethnicity');
+  const regionEl = $('#region');
+  const angleEl = $('#angle');
+  const noSurgEl = $('#noSurg');
+  const noInjectEl = $('#noInject');
+  const lowBudgetEl = $('#lowBudget');
+  const addBrollEl = $('#addBroll');
+  const addSrtEl = $('#addSrt');
+  const outEl = $('#out');
+  const errEl = $('#err');
+  const progEl = $('#prog');
+
+  let files = [];
+
+  function setError(msg){ errEl.textContent = msg || ''; errEl.classList.toggle('show', !!msg); }
+  function setProgress(p){ progEl.style.width = (Math.max(0, Math.min(100, p)) || 0) + '%'; }
+
+  function validateKey(k){
+    if(!k) return false;
+    const s = k.trim().replace(/^["']|["']$/g, '');
+    if(/^https?:\/\//i.test(s) || /^file:\/\//i.test(s)) return false;
+    return /^AIza[0-9A-Za-z_\-]{20,}$/.test(s);
+  }
+
+  function b64(dataUrl){
+    const i = dataUrl.indexOf(',');
+    return i >= 0 ? dataUrl.slice(i+1) : dataUrl;
+  }
+
+  // Persist key locally
+  document.addEventListener('DOMContentLoaded', ()=> {
+    const k = localStorage.getItem('geminiApiKey');
+    if(k) apiKeyEl.value = k;
+  });
+  apiKeyEl.addEventListener('input', ()=> localStorage.setItem('geminiApiKey', apiKeyEl.value));
+
+  // Photo picking
+  btnPick.addEventListener('click', ()=> fileInput.click());
+  btnClear.addEventListener('click', ()=> resetPhotos());
+
+  fileInput.addEventListener('change', (e)=>{
+    const list = Array.from(e.target.files || []);
+    resetPhotos(true);
+    list.slice(0,7).forEach((file, idx)=>{
+      const r = new FileReader();
+      r.onload = ev => {
+        files.push({ file, dataUrl: ev.target.result });
+        renderThumb(ev.target.result, idx);
+      };
+      r.readAsDataURL(file);
+    });
+    fileInput.value = '';
+  });
+
+  function resetPhotos(keepPicker){
+    files = [];
+    thumbs.innerHTML = '<small>No photos yet.</small>';
+    countTag.textContent = '0 selected';
+    if(!keepPicker) fileInput.value = '';
+  }
+
+  function renderThumb(dataUrl, ix){
+    if(files.length === 1) thumbs.innerHTML = '';
+    const img = new Image();
+    img.src = dataUrl; img.alt = 'Photo ' + (ix+1);
+    thumbs.appendChild(img);
+    countTag.textContent = files.length + ' selected';
+  }
+
+  // ============ Rubric (embedded) ============
+  function femaleCriteria(){
+    return [
+      {"code":"P1","bucket":"P","name":"Face Shape & Proportions","anchors":{"1":"Proportions distract; thirds/fifths off.","3":"Mostly balanced; minor drift.","5":"Reads harmonious at a glance."}},
+      {"code":"P2","bucket":"P","name":"Midface Width/Height","anchors":{"1":"Elongated or boxy midface.","3":"Within common ratios.","5":"Compact, youthful ratio."}},
+      {"code":"Y18","bucket":"Y","name":"Cervico-mental Angle","anchors":{"1":"Blunt neck-jaw transition.","3":"Some definition.","5":"Sharp, youthful angle."}},
+      {"code":"D6","bucket":"D","name":"Jawline Definition (F)","anchors":{"1":"Soft or unclear jawline.","3":"Defined but softened.","5":"Clean, feminine contour."}},
+      {"code":"P3","bucket":"P","name":"Chin Shape & Projection","anchors":{"1":"Under or over projected.","3":"Proportional.","5":"Delicate, balanced tip."}},
+      {"code":"P4","bucket":"P","name":"Gonial/Jaw Angle (F)","anchors":{"1":"Harsh or wide angle.","3":"Balanced angle.","5":"Soft, feminine angle."}},
+      {"code":"D7","bucket":"D","name":"Zygomatic Projection & Ogee Curve","anchors":{"1":"Flat midface.","3":"Modest curve.","5":"High, elegant ogee."}},
+      {"code":"D9","bucket":"D","name":"Periocular Shape (Almond)","anchors":{"1":"Droopy or undefined.","3":"Almond tendency.","5":"Clean almond shape."}},
+      {"code":"P5","bucket":"P","name":"Eye Spacing & Size Harmony","anchors":{"1":"Crowded or wide-set or size off.","3":"Near norms.","5":"Balanced spacing; open eyes."}},
+      {"code":"Y16","bucket":"Y","name":"Canthal Tilt & Medial Canthus","anchors":{"1":"Negative or flat tilt.","3":"Neutral to slight positive.","5":"Youthful positive tilt."}},
+      {"code":"D10","bucket":"D","name":"Brow/Lash Frame","anchors":{"1":"Sparse or low frame.","3":"Defined frame.","5":"Full, groomed; lifts eyes."}},
+      {"code":"D8","bucket":"D","name":"Nasal Harmony (F)","anchors":{"1":"Bulbous or long or wide.","3":"Balanced.","5":"Refined, proportional."}},
+      {"code":"D11","bucket":"D","name":"Lip Shape/Proportion","anchors":{"1":"Thin or imbalanced.","3":"Proportional.","5":"Full, defined bow."}},
+      {"code":"Y17","bucket":"Y","name":"Dental Display & Smile","anchors":{"1":"Gummy or uneven.","3":"Even; mild issues.","5":"Broad, even tooth show."}},
+      {"code":"S11","bucket":"S","name":"Skin Evenness/Texture","anchors":{"1":"Blotchy or rough.","3":"Mostly even.","5":"Smooth, uniform glow."}},
+      {"code":"S12","bucket":"S","name":"Facial Fat Distribution","anchors":{"1":"Hollowed or patchy.","3":"Balanced.","5":"Youthful, even fullness."}},
+      {"code":"P1a","bucket":"P","name":"Upper Third (Forehead)","anchors":{"1":"Lines or scale distract.","3":"Balanced.","5":"Smooth, proportional."}},
+      {"code":"O19","bucket":"O","name":"Overall Averageness/Harmony","anchors":{"1":"Noticeable disharmony.","3":"Mostly cohesive.","5":"Natural, elegant harmony."}},
+      {"code":"S15","bucket":"S","name":"Hair as Frame","anchors":{"1":"Competes with face.","3":"Neutral frame.","5":"Enhances proportions."}},
+      {"code":"O20","bucket":"O","name":"Overall Presence","anchors":{"1":"Flat or tense vibe.","3":"Composed.","5":"Graceful, confident aura."}}
+    ];
+  }
+
+  function maleCriteria(){
+    return [
+      {"code":"P2","bucket":"P","name":"Symmetry (M)","anchors":{"1":"Obvious asymmetry.","3":"Minor asymmetry.","5":"Balanced; flaws non-salient."}},
+      {"code":"O19","bucket":"O","name":"Averageness (M)","anchors":{"1":"Outlier features.","3":"Typical for ancestry.","5":"Striking, balanced look."}},
+      {"code":"P1","bucket":"P","name":"Facial Thirds & Index (M)","anchors":{"1":"Thirds off; elongation.","3":"Balanced thirds.","5":"Proportional, youthful index."}},
+      {"code":"P3","bucket":"P","name":"fWHR & Brow-Orbital Masculinity","anchors":{"1":"Weak fWHR or brow ridge.","3":"Defined.","5":"Strong fWHR; clear brow-orbital."}},
+      {"code":"D6","bucket":"D","name":"Jawline Definition (M)","anchors":{"1":"Blurred or jowly.","3":"Defined; some softening.","5":"Sharp, chiseled line."}},
+      {"code":"P3a","bucket":"P","name":"Ramus Height & Gonial Angle","anchors":{"1":"Short ramus; soft angle.","3":"Balanced.","5":"Tall ramus; crisp angle."}},
+      {"code":"P4","bucket":"P","name":"Chin Projection & Shape (M)","anchors":{"1":"Recessed or bulbous.","3":"Defined.","5":"Strong, projected chin."}},
+      {"code":"P5","bucket":"P","name":"Jaw Width Ratio (M)","anchors":{"1":"Narrow or weak ratio.","3":"Balanced.","5":"Wide, masculine ratio."}},
+      {"code":"D7","bucket":"D","name":"Zygomatic Prominence (M)","anchors":{"1":"Flat midface.","3":"Defined.","5":"Prominent cheekbones."}},
+      {"code":"D8","bucket":"D","name":"Nose Proportion & Shape (M)","anchors":{"1":"Large or crooked.","3":"Balanced.","5":"Proportional; straight bridge."}},
+      {"code":"D9","bucket":"D","name":"Eyes (Shape/Spacing/Tilt) (M)","anchors":{"1":"Droopy or odd spacing.","3":"Balanced.","5":"Defined shape and tilt."}},
+      {"code":"D10","bucket":"D","name":"Eyebrows (M)","anchors":{"1":"Sparse or untidy.","3":"Groomed.","5":"Full, defined frame."}},
+      {"code":"S14","bucket":"S","name":"Periorbital Support (M)","anchors":{"1":"Hollow or dark.","3":"Some support.","5":"Strong, bright support."}},
+      {"code":"D11","bucket":"D","name":"Lips (Form/Ratio) (M)","anchors":{"1":"Thin or imbalanced.","3":"Balanced.","5":"Defined, masculine ratio."}},
+      {"code":"Y16","bucket":"Y","name":"Teeth & Smile (M)","anchors":{"1":"Uneven or low show.","3":"Balanced.","5":"Bright, even smile."}},
+      {"code":"Y17","bucket":"Y","name":"Hairline/Density or Shaved Aesthetic","anchors":{"1":"Patchy or dated cut.","3":"OK; groomed.","5":"Dense or sharp shaved look."}},
+      {"code":"S11","bucket":"S","name":"Skin Texture (M)","anchors":{"1":"Rough or blemished.","3":"Even; early lines.","5":"Smooth, clear texture."}},
+      {"code":"S12","bucket":"S","name":"Skin Tone Evenness (M)","anchors":{"1":"Uneven or blotchy.","3":"Balanced.","5":"Even, vibrant tone."}},
+      {"code":"S13","bucket":"S","name":"Facial Leanness (M)","anchors":{"1":"Heavy or soft.","3":"Balanced.","5":"Lean, defined."}},
+      {"code":"Y18","bucket":"Y","name":"Cervico-mental Angle (M)","anchors":{"1":"Blunt angle.","3":"Defined.","5":"Sharp, youthful contour."}}
+    ];
+  }
+
+  function groupsFor(sex){
+    if (sex === "male"){
+      return {
+        "structure_block":  { "criteria_codes": ["P2","O19","P1","P3","D6","P3a","P4","P5","D7","D8"], "weight": 0.50 },
+        "eyes_skin_block":  { "criteria_codes": ["D9","D10","S14","S11","S12","S13","Y18"], "weight": 0.30 },
+        "smile_hair_media": { "criteria_codes": ["D11","Y16","Y17"], "weight": 0.20 }
+      };
+    }
+    return {
+      "shape_structure":  { "criteria_codes": ["P1","P2","Y18","D6","P3","P4","D7","P1a","O19"], "weight": 0.30 },
+      "eyes_brows":       { "criteria_codes": ["D9","P5","Y16","D10"], "weight": 0.25 },
+      "nose_lips_smile":  { "criteria_codes": ["D8","D11","Y17"], "weight": 0.20 },
+      "skin_fat_hair":    { "criteria_codes": ["S11","S12","S15","O20"], "weight": 0.25 }
+    };
+  }
+
+  function makeUnifiedRubric(sex){
+    var sx = (sex === "male") ? "male" : "female";
+    var crit = (sx === "male") ? maleCriteria() : femaleCriteria();
+    return {
+      "scale": { "min": 1, "max": 5, "step": 0.25 },
+      "dynamics_rule": {
+        "affected_codes": ["Y16","Y17","Y18"],
+        "downweight_if_no_smile_clip": 0.5,
+        "data_needed_flag": "smile_clip"
+      },
+      "sex": sx,
+      "criteria": crit,
+      "groups": (sx === "male") ? { "male": groupsFor("male") } : { "female": groupsFor("female") },
+      "report": { "rationale_limit": 140 }
+    };
+  }
+
+  // ============ Voice/Style Guide (verbatim) ============
+  function styleGuide(){
+    return `**Personality & Psychological Profile (Hypothetical)**
+
+• **Big 5 Personality**:
+• **Openness**: Moderate-high (curious, innovative approach)
+• **Conscientiousness**: High (organized, strategic, precise)
+• **Extraversion**: High (engaging, conversational, enjoys public speaking)
+• **Agreeableness**: Moderate (empathetic yet direct)
+• **Neuroticism**: Low-Moderate (maintains calmness and confidence during crisis discussions)
+
+• **Myers-Briggs**: Likely ENFJ (warm, articulate, influential communicator, emphasizes emotional understanding)
+• **Enneagram**: Likely Type 3w2 (achiever with a supportive, helpful secondary type)
+• **DSM-V Traits**: Notable emotional intelligence, exhibits healthy assertiveness and insightfulness. No notable pathology.
+
+**Sample Quotes (5 examples)**
+1. **Direct & Purposeful**: “I’m tackling a PR power dynamic more as a public service to help people spot the PR behind the moves and motives.”
+2. **Reflective Insight**: “The only way I can do it truly successfully is if the person at the center of it understands the root cause of the crisis.”
+3. **Colloquial Humor & Relatability**: “BookTok is a thing, y’all.”
+4. **Empathy-driven Connection**: “As a busy mom of four, I can speak from experience on this one. It’s not easy being successful when you have other people you have to look out for.”
+5. **Direct, Critical Observations**: “Cancel culture is still alive and well because it happened to Justin Baldoni. So in rapid succession, this is what happened when this story came out.”
+
+**Frequently Used Verbs**
+Break down, Peel back, Dig into, Analyze, Address, Acknowledge, Evaluate, Frame, Push back, Respond, Control, Diminish, Undermine, Justify, Spin, Apologize, Overshadow, Expose.
+
+**Common Adjectives**
+Messy, Chaotic, Calculated, Tone-deaf, Disastrous, Strategic, Risky, Problematic, Clumsy, Performative, Reactive, Genuine, Defensive, Predictable, Surprising.
+
+**Colloquialisms, Acronyms & Transitional Phrases**
+Frequent Colloquialisms: “Here’s the thing…”, “I’m gonna say…”, “I’ll just say it.”, “At the heart of this crisis is…”, “That doesn’t wash.”, “Bad PR”, “News dump”, “PR smear campaign”, “Silent trigger”, “Silent root”, “Secret trigger”
+Acronyms & Jargon: PR, DEI, SAG, AI, MeToo
+
+**Transitions**
+Setting up: “Let’s talk about…”, “We need to address…”, “This is important because…”, “So here’s what happened…”, “Now let’s set the stage…”
+Providing context: “Historically…”, “In situations like this…”, “This isn’t the first time we’ve seen…”
+Breaking down: “Let’s break this down…”, “Let’s peel back the layers…”, “Here’s the timeline…”, “Fast forward to…”, “This is where things start to unravel…”, “And here’s the kicker…”
+Contrasting: “On one hand…”, “But here’s the problem…”, “That being said…”, “At the same time…”, “This is where things get interesting…”
+Emphasizing: “And this is the part that matters.”, “Here’s why that’s important.”, “The key takeaway here is…”, “This is what people don’t understand…”
+Concluding: “So at the end of the day…”, “Which brings us back to…”, “And that’s how you handle a PR crisis—properly.”, “Let me know your thoughts on this.”
+
+**How She Asks Questions**
+Rhetorical: “Was this really the best move?”, “Do you see the problem here?”, “Could they have handled this any worse?”, “Why would they think this would work?”, “Did they expect people to just forget about it?”
+Leading: “So what went wrong?”, “What does this tell us about how PR works?”, “Why is this crisis hitting so hard?”, “How did this become a problem in the first place?”, “Could they have prevented this?”
+Comparative: “Remember when they handled this differently?”, “Why was this okay in one situation, but not in another?”, “How does this compare to similar PR crises?”, “Would this have played out the same way five years ago?”
+Audience: “What do you think?”, “Have you noticed this pattern?”, “Did you see the way this played out?”, “Would you have handled this differently?”
+
+**Chain of Thought & Process**
+- Begin with clear intentions/questions guiding the narrative.
+- Use reflective insights and speculative inquiry to uncover motivations.
+- Emphasize empathy & emotional intelligence.
+- Frame arguments as hypotheses supported by observations/anecdotes/insider insights.
+
+**Mental Models**
+- Fear as root cause (exposure, loss, failure).
+- Power dynamics & control (esp. gender).
+- Crisis mgmt lens (fear of loss: reputation/control/status).
+
+**Inner Dialogue**
+- Ask aloud “What do you hear?”
+- Move broad context → specifics → core emotional insights.
+- Curious, skeptical, emotionally attuned.
+
+**Humor**
+- Dry, observational, anecdotal, wry; gentle sarcasm; callbacks.
+
+**Approach to Drama/Tragedy**
+- Empathetic with analytical clarity; distinguish tragedy from tactics; avoid exploitation.
+
+**Use of the 7 Emotions**
+- Fear, Anger (controlled and ethical), Joy (light, self-deprecating), Sadness (empathetic), Disgust (for unethical behavior), Surprise (anecdotes), Contempt (carefully targeted at hypocrisy/injustice).
+
+**Implementation 1-2-3**
+1) Identify core emotional narrative (fear, powerlessness, injustice).
+2) Develop anecdotes that illustrate it.
+3) Use colloquial language & humor strategically.
+
+**Premortem (avoid misrepresentation)**
+- Capture emotional nuance authentically.
+- Flag speculation as speculative.
+- Ensure quotes reflect emotional context & intent.
+
+**Rubric for Success**
+Level 4: Precisely captures empathy, reflective insights, humor, PR terminology.
+Level 3: Largely reflective with minor misses.
+Level 2: Tone captured, emotional nuance weak.
+Level 1: Superficial, misses reflective insights/humor.
+
+**Premortem (pitfalls)**
+- Avoid overgeneralization.
+- Maintain empathy.
+- Balance humor & seriousness.
+
+**Samples (5)**
+“Every crisis begins when one side feels powerless after a perceived injustice.”
+“People hire me for backlash.”
+“Cancel culture is still alive and well because it happened to Justin Baldoni.”
+“I felt absolutely terrible not being here for my city.”
+“It’s politics driven by personality.”
+
+**Humor Type**: Ironic, observational, anecdotal, wry.
+**Emotion & Drama**: Empathetic; direct moral clarity; sensitive yet firm.`;
+  }
+
+  // ============ Prompt Builder ============
+  function buildPrompt(params, rubric){
+    const sg = styleGuide();
+    const meta = JSON.stringify({
+      inputs:{
+        sex: params.sex, age: params.age, ethnicity: params.ethnicity, region_standard: params.region,
+        angle: params.angle, constraints:{ no_surgery: params.noSurg, no_injectables: params.noInject, low_budget: params.lowBudget },
+        include_broll: params.addBroll, include_srt: params.addSrt
+      },
+      rubric: rubric
+    });
+
+    const system = [
+      "ROLE: Senior crisis-PR analyst + empathetic on-camera host.",
+      "TASK: From the provided photos and rubric, infer a structured look analysis and write a ~12-minute YouTube script (≈1650–1800 words).",
+      "AUDIENCE: General viewers; be kind, precise, motivating. Avoid shame. Educational, not medical advice."
+    ].join("\\n");
+
+    const structure = [
+      "STRUCTURE (label sections explicitly):",
+      "1) Hook (0:00–0:20) — one-sentence curiosity hook; what we’ll break down.",
+      "2) Set the Stage — who I’m helping (sex/age/region), what was measured (20+ signals across buckets).",
+      "3) Key Takeaways (TL;DR) — overall read plus 3 leverage points (lowest areas to improve).",
+      "4) Peel Back the Layers — for each bucket (P/D/S/Y/O): top wins + 1 fix; explain simply (8th grader) then add one pro insight (mgmt consultant).",
+      "5) Action Plan (Weeks 1–12) — narrate a staged protocol; respect constraints (no surgery/injectables) and add <$200/mo swaps if requested.",
+      "6) Lifestyle & Camera Craft — posture, lighting, framing, grooming; 80/20 wins.",
+      "7) Premortem — likely blockers & how to avoid them.",
+      "8) Close + CTA — encouragement + this week’s first step; invite comments.",
+      "If include_broll=true: add [B-ROLL:] and [ON-SCREEN:] cues where helpful.",
+      "If include_srt=true: prefix major beats with [mm:ss] timestamps paced to ~12:00 total."
+    ].join("\\n");
+
+    const constraints = [
+      "CONSTRAINTS:",
+      "- Respect boundaries (no surgery/injectables if set). Suggest non-invasive alternatives.",
+      "- Keep copy concrete and upbeat (not gushy). Avoid medical claims.",
+      "- Use lay terms first, then an optional one-sentence technical aside.",
+      "- Reference criterion names briefly when relevant (e.g., 'Jawline Definition')."
+    ].join("\\n");
+
+    return [
+      system,
+      "VOICE/TONE GUIDE (verbatim):",
+      sg,
+      structure,
+      constraints,
+      "DATA(JSON):",
+      meta,
+      "INSTRUCTIONS:",
+      "- First, infer the analysis from the photos against the rubric (you do not need to print the JSON).",
+      "- Then write ONLY the final script in plain text, complete and ready to read on camera.",
+      "- Do NOT include any JSON or metadata in the answer."
+    ].join("\\n\\n");
+  }
+
+  // ============ Gemini Call ============
+  async function callGeminiText(key, prompt, images){
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key);
+    const parts = [{ text: prompt }];
+    images.forEach(img => {
+      parts.push({ inline_data: { mime_type: img.file.type || 'image/jpeg', data: b64(img.dataUrl) } });
+    });
+    const contents = [{ role:"user", parts }];
+    const payload = {
+      contents,
+      generationConfig: { responseMimeType: "text/plain", temperature: 0.5 }
+    };
+    const res = await fetch(endpoint, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    if(!res.ok){
+      let t = ""; try{ t = await res.text(); } catch {}
+      throw new Error("HTTP " + res.status + (t?": "+t:""));
+    }
+    const j = await res.json();
+    const text = j?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("").trim();
+    if(!text) throw new Error("Empty response from model");
+    return text;
+  }
+
+  // ============ Build Script flow ============
+  $('#btnBuild').addEventListener('click', async ()=>{
+    try{
+      setError(""); setProgress(0);
+      outEl.value = "";
+
+      if(files.length === 0) throw new Error("Add at least one photo.");
+      const key = (apiKeyEl.value || "").trim();
+      if(!key) throw new Error("Enter your Gemini API key.");
+      if(!validateKey(key)) throw new Error("Your API key looks invalid. It usually starts with AIza…");
+
+      const params = {
+        sex: sexEl.value,
+        age: parseInt(ageEl.value || "30", 10),
+        ethnicity: (ethnicityEl.value || "").trim(),
+        region: regionEl.value,
+        angle: angleEl.value,
+        noSurg: !!noSurgEl.checked,
+        noInject: !!noInjectEl.checked,
+        lowBudget: !!lowBudgetEl.checked,
+        addBroll: !!addBrollEl.checked,
+        addSrt: !!addSrtEl.checked
+      };
+
+      setProgress(15);
+      const rubric = makeUnifiedRubric(params.sex);
+      const prompt = buildPrompt(params, rubric);
+      setProgress(35);
+
+      const text = await callGeminiText(key, prompt, files);
+      setProgress(95);
+      outEl.value = text;
+      setProgress(100);
+    } catch(err){
+      console.error(err);
+      setError(String(err.message || err));
+      setProgress(0);
+    }
+  });
+
+  // Copy & Download
+  $('#btnCopy').addEventListener('click', ()=>{
+    if(outEl.value) navigator.clipboard.writeText(outEl.value).catch(()=>{});
+  });
+  $('#btnSave').addEventListener('click', ()=>{
+    const blob = new Blob([outEl.value || ""], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'look-12min-script.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 300);
+  });
+
+  console.log('[script.html] Ready — single-file YouTube script generator.');
+})();
+</script>
+</body>
+</html>

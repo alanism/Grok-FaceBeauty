@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Look Score — v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&family=Inter:wght@400;700&family=Raleway+Dots&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f0f0f;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #707070;
+      --cyan-500: #00bcd4; --cyan-700: #008fa1;
+      --orange-500: #ff9800; --orange-700: #f57c00;
+      --yellow-400: #ffeb3b; --mint-500: #4caf50;
+      --panel-bg: rgba(20, 20, 20, 0.8); --border-color: rgba(255, 255, 255, 0.1);
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg-color); color: var(--text-primary); }
+    header .kicker { letter-spacing: 0.18em; }
+    .panel { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.25rem; }
+    .btn { border: 1px solid var(--text-primary); padding: 0.5rem 0.75rem; }
+    .btn-primary { background: var(--text-primary); color: var(--bg-color); }
+    .btn-primary:hover { background: var(--cyan-700); color: white; border-color: var(--cyan-700); }
+    input, select { background: #0f0f0f; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.6rem 0.75rem; width: 100%; }
+    .error-message { display:none; margin-top:0.5rem; padding:0.5rem 0.75rem; background: var(--orange-700); color:black; border:1px solid var(--orange-500); }
+    .error-message.show { display:block; }
+    .photo-thumbnail { width:80px; height:80px; object-fit:cover; border: 1px solid var(--border-color); }
+    .font-kpi { font-family: 'Inter', sans-serif; font-feature-settings: "tnum"; }
+    .tag { font-size: 0.75rem; padding: 0.15rem 0.4rem; border:1px solid var(--border-color); }
+    .tag.P { color: var(--cyan-500); border-color: var(--cyan-500); }
+    .tag.D { color: var(--orange-500); border-color: var(--orange-500); }
+    .tag.S { color: var(--yellow-400); border-color: var(--yellow-400); }
+    .tag.Y { color: var(--mint-500); border-color: var(--mint-500); }
+    .tag.O { color: #9adbe1; border-color: #9adbe1; }
+    .tips-cell { font-size: 0.9rem; color: var(--text-secondary); }
+    .tips-row { background: rgba(255,255,255,0.02); }
+    .toggle-tips { border: 1px solid var(--border-color); font-size: 0.75rem; padding: 0.2rem 0.45rem; }
+  </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+  <header class="text-center mb-8">
+    <div class="kicker text-cyan-500 font-raleway-dots text-xs uppercase">Private test • No upsell</div>
+    <h1 class="text-4xl sm:text-5xl font-raleway-dots font-bold mt-1">Your Look Score</h1>
+    <p class="text-cyan-500">20 signals. 4 coaches. One plan that actually compounds.</p>
+    <div class="mt-3 text-sm">
+    <a href="socialscript.html" class="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">
+      Try the 12‑minute YouTube Script generator →
+    </a>
+  </div>
+</header>
+
+  <main class="panel max-w-5xl mx-auto">
+    <section class="mb-6">
+      <h2 class="font-bold text-lg mb-2">Upload photos</h2>
+      <div id="photo-thumbs" class="border border-dashed border-white/20 p-4 flex gap-3 flex-wrap items-center">
+        <span id="no-photos" class="text-text-tertiary text-sm">Your photos will appear here.</span>
+      </div>
+      <input id="file-input" type="file" accept="image/jpeg, image/png" multiple class="hidden">
+      <div class="flex gap-3 mt-3">
+        <button id="btn-upload" class="btn btn-primary">Upload Photos</button>
+        <button id="btn-clear" class="btn">Clear</button>
+      </div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="font-bold text-lg mb-2">Your details</h2>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm">Sex</label>
+          <div class="flex items-center gap-4 mt-1">
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="sex" id="sex-f" value="female" checked> Woman</label>
+            <label class="flex items-center gap-2 text-sm"><input type="radio" name="sex" id="sex-m" value="male"> Man</label>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm">Age</label>
+          <input id="age" type="number" min="1" max="100" value="30" class="font-kpi">
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm">Background (optional)</label>
+          <input id="ethnicity" placeholder="e.g., Vietnamese">
+          <p class="text-xs text-text-secondary mt-1">Helps avoid penalizing ethnic traits.</p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm">Beauty standard</label>
+          <select id="region">
+            <option value="US">US</option>
+            <option value="EastAsia">East Asia</option>
+            <option value="SEAsia">SE Asia</option>
+            <option value="EU">EU</option>
+            <option value="LATAM">LATAM</option>
+            <option value="MENA">MENA</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm">Gemini API key</label>
+          <input id="api-key" type="password" placeholder="AIza...">
+          <p class="text-xs text-text-secondary">Stored locally. Never sent to our servers.</p>
+        </div>
+      </div>
+    </section>
+
+    <div id="err-key-missing" class="error-message">Enter your Gemini API key.</div>
+    <div id="err-key-invalid" class="error-message">Your Gemini API key looks invalid. Paste a valid key (starts with AIza…).</div>
+    <div id="err-no-photos" class="error-message">Add at least one photo.</div>
+    <div id="err-network" class="error-message">Network issue. Try again.</div>
+    <div id="err-model" class="error-message">AI returned something unexpected. Try again with 3 clear photos.</div>
+
+    <button id="btn-score" class="btn btn-primary w-full mt-2 py-3 font-bold">Score my photos → Build my plan</button>
+
+    <p class="text-xs text-text-secondary mt-3 text-center">You’ll see: Look Score, 20 category scores (+ ≤140 “why”), 4 coach tips per criterion, and a 12‑week protocol.</p>
+  </main>
+
+  <section id="results" class="panel max-w-5xl mx-auto mt-8 hidden">
+    <h2 class="text-2xl font-bold mb-4">Results</h2>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="p-3 border border-white/10">
+        <div class="text-sm text-text-secondary">Your Look Score</div>
+        <div id="total-score" class="text-5xl font-kpi">—</div>
+        <div class="text-sm text-text-secondary mt-1">Percentile</div>
+        <div id="percentile" class="text-2xl font-kpi">—</div>
+        <div id="pct-note" class="text-xs text-text-tertiary mt-1"></div>
+        <div class="text-sm text-text-secondary mt-2">Per‑image totals</div>
+        <div id="per-image" class="font-kpi">—</div>
+      </div>
+      <div class="md:col-span-2 p-3 border border-white/10">
+        <div class="text-sm text-text-secondary mb-1">Your marker vs the crowd (μ=60, σ=10)</div>
+        <canvas id="bell" height="140"></canvas>
+      </div>
+    </div>
+
+    <div class="p-3 border border-white/10 mb-6">
+      <div class="text-sm text-text-secondary mb-2">Radar — buckets and per‑bucket detail</div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <div class="text-sm text-text-secondary mb-1">Overall buckets (P, D, S, Y, O)</div>
+          <canvas id="radar-buckets" height="220"></canvas>
+        </div>
+        <div>
+          <div class="flex gap-2 text-xs mb-1">
+            <span class="tag P">P</span>
+            <span class="tag D">D</span>
+            <span class="tag S">S</span>
+            <span class="tag Y">Y</span>
+            <span class="tag O">O</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <canvas id="radar-P" height="200"></canvas>
+            <canvas id="radar-D" height="200"></canvas>
+            <canvas id="radar-S" height="200"></canvas>
+            <canvas id="radar-Y" height="200"></canvas>
+            <canvas id="radar-O" height="200" class="col-span-2 md:col-span-1"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-3 border border-white/10">
+      <div class="flex gap-2 items-center justify-between mb-2">
+        <div class="text-sm text-text-secondary">Category Scores (20)</div>
+        <div class="flex gap-2">
+          <button id="btn-expand-all" class="toggle-tips">Expand all tips</button>
+          <button id="btn-collapse-all" class="toggle-tips">Collapse all</button>
+          <button id="btn-copy-all" class="toggle-tips">Copy all</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="text-left text-text-secondary border-b border-white/10">
+            <tr>
+              <th class="py-2 pr-4">Code</th>
+              <th class="py-2 pr-4">Criterion</th>
+              <th class="py-2 pr-4">Score</th>
+              <th class="py-2 pr-4">Why (≤140)</th>
+              <th class="py-2 pr-4">Tips</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="align-top"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="p-3 border border-white/10 mt-6">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-sm text-text-secondary">Your 12‑Week Protocol</div>
+        <button id="btn-copy-protocol" class="toggle-tips">Copy protocol</button>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        <div><div class="font-bold mb-1">Weeks 1–4</div><ul id="w1" class="list-disc list-inside space-y-1"></ul></div>
+        <div><div class="font-bold mb-1">Weeks 5–8</div><ul id="w2" class="list-disc list-inside space-y-1"></ul></div>
+        <div><div class="font-bold mb-1">Weeks 9–12</div><ul id="w3" class="list-disc list-inside space-y-1"></ul></div>
+      </div>
+      <div id="data-needed" class="text-xs text-yellow-400 mt-2"></div>
+    </div>
+  </section>
+
+  <div id="overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="text-center max-w-md">
+      <div class="text-cyan-500 font-raleway-dots text-3xl mb-2">Analyzing your photos…</div>
+      <p class="text-text-secondary">3–10 minutes. Keep this tab open.</p>
+    </div>
+  </div>
+
+  <script src="prompt-patch-v1.js"></script>
+  <script src="app-v2.js"></script>
+</body>
+</html>
