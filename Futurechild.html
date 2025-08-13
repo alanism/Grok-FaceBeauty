@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Future Child — v5 Projection Dashboard</title>
+<style>
+  :root{ --bg:#0e1117; --panel:#141a22; --text:#e6e8ee; --sub:#a9b0bf; --muted:#6b7280; --accent:#17c3e2; --accent2:#f59e0b; --ok:#10b981; --bad:#ef4444; --border:#202534; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--text); font:16px system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; line-height:1.5}
+  .wrap{max-width:1200px; margin:24px auto; padding:0 16px}
+  header{text-align:center; margin-bottom:12px}
+  .kicker{color:var(--accent); font-size:12px; letter-spacing:.12em; text-transform:uppercase}
+  h1{font-size:28px; margin:6px 0 4px}
+  small{color:var(--sub)}
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  label{font-size:13px; color:var(--sub); display:block; margin-top:8px}
+  input[type="text"], textarea{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text)}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text); cursor:pointer}
+  .btn.primary{background:var(--text); color:#0b0e14; font-weight:700}
+  .btn:disabled{opacity:.6; cursor:not-allowed}
+  .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center}
+  .thumbs img{width:88px; height:88px; object-fit:cover; border:1px solid var(--border); border-radius:8px}
+  .tag{display:inline-block; font-size:12px; border:1px solid var(--border); padding:2px 6px; border-radius:999px; color:var(--sub)}
+  .bar{height:8px; background:#0b0e14; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+  .bar span{display:block; height:100%; background:var(--accent2); width:0%}
+  .flex{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .mt-8{margin-top:16px} .mt-12{margin-top:24px} .mt-20{margin-top:40px}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px}
+  .center{text-align:center}
+  .foot{color:var(--muted); font-size:12px; text-align:center; margin:20px 0}
+  .error{display:none; margin-top:8px; padding:8px 10px; border:1px solid #7f1d1d; background:#3f1d1d; color:#fecaca; border-radius:8px}
+  .error.show{display:block}
+  canvas{max-width:100%}
+  .pill{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; color:var(--sub)}
+  .pill.ok{border-color:rgba(16,185,129,.35)}
+  .pill.attn{border-color:rgba(245,158,11,.35)}
+  table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid var(--border); border-radius:12px}
+  thead th{position:sticky; top:0; background:#10131a; color:#a9b0bf; font-weight:600; text-transform:uppercase; font-size:12px; letter-spacing:.04em}
+  th, td{padding:10px 12px; border-bottom:1px solid var(--border)}
+  tbody tr:nth-child(odd){background:#0b0e14}
+  .report p{margin:0 0 12px}
+  .status{font-size:12px; color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Private beta • Your Gemini key, your browser</div>
+    <h1>Future Child - Projection Dashboard (v5)</h1>
+    <small>Upload 3 to 5 photos of Dad and 3 to 5 photos of Mom. We estimate feature-level inheritance and show daughter and son projections. Educational, not medical advice.</small>
+    <div style="margin-top:10px" class="flex center">
+      <a href="index.html" class="btn">← Back</a>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label>Dad photos (3 to 5 JPG/PNG)</label>
+        <div class="flex">
+          <button id="btnDadPick" class="btn">Choose dad photos</button>
+          <button id="btnDadClear" class="btn">Clear</button>
+          <span id="dadCount" class="tag">0 selected</span>
+        </div>
+        <input id="dadInput" type="file" accept="image/jpeg,image/png" multiple style="display:none"/>
+        <div id="dadThumbs" class="thumbs"><small>No photos yet.</small></div>
+      </div>
+      <div>
+        <label>Mom photos (3 to 5 JPG/PNG)</label>
+        <div class="flex">
+          <button id="btnMomPick" class="btn">Choose mom photos</button>
+          <button id="btnMomClear" class="btn">Clear</button>
+          <span id="momCount" class="tag">0 selected</span>
+        </div>
+        <input id="momInput" type="file" accept="image/jpeg,image/png" multiple style="display:none"/>
+        <div id="momThumbs" class="thumbs"><small>No photos yet.</small></div>
+      </div>
+    </div>
+
+    <div class="row mt-12">
+      <div>
+        <label>Gemini API key (kept in your browser)</label>
+        <input id="apiKey" type="text" placeholder="AIza..."/>
+        <div class="status" id="keyStatus">Key not set</div>
+      </div>
+      <div>
+        <label>Notes (optional, private)</label>
+        <input id="notes" type="text" placeholder="lighting, ethnicity, etc."/>
+      </div>
+    </div>
+
+    <div class="mt-12 flex">
+      <button id="btnRun" class="btn primary">Analyze parents -> project children</button>
+      <button id="btnSaveJson" class="btn">Download JSON</button>
+      <span class="bar" style="flex:1"><span id="prog"></span></span>
+    </div>
+    <div id="err" class="error"></div>
+    <div class="status mt-8" id="apiStatus">Waiting for input…</div>
+  </section>
+
+  <section class="panel mt-12">
+    <div class="grid-2">
+      <div class="center">
+        <label>Distribution - where do the kids likely land?</label>
+        <canvas id="bell"></canvas>
+      </div>
+      <div>
+        <div class="center">
+          <label>Six-category balance - Mom</label>
+          <canvas id="radarMom"></canvas>
+        </div>
+        <div class="center mt-12">
+          <label>Six-category balance - Dad</label>
+          <canvas id="radarDad"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="mt-12 center">
+      <span class="pill ok" id="momTotal"></span>
+      <span class="pill ok" id="dadTotal"></span>
+      <span class="pill" id="dtrTotal"></span>
+      <span class="pill" id="sonTotal"></span>
+      <span class="pill attn" id="synPill"></span>
+    </div>
+  </section>
+
+  <section class="panel mt-12">
+    <label>Criteria scores (1-5, 0.1 steps)</label>
+    <div class="mt-8" style="overflow:auto;">
+      <table id="critTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Dad</th>
+            <th>Mom</th>
+            <th>Daughter (proj)</th>
+            <th>Daughter min</th>
+            <th>Daughter max</th>
+            <th>Son (proj)</th>
+            <th>Son min</th>
+            <th>Son max</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel mt-12">
+    <div class="grid-2">
+      <div>
+        <label>Scenarios - Daughter</label>
+        <div class="flex mt-8" id="dScen"></div>
+      </div>
+      <div>
+        <label>Scenarios - Son</label>
+        <div class="flex mt-8" id="sScen"></div>
+      </div>
+    </div>
+    <div class="mt-12">
+      <label>Written summary (600-800 words)</label>
+      <div id="textReport" class="report" style="margin-top:8px; line-height:1.6"></div>
+    </div>
+  </section>
+
+  <div class="foot">No uploads to our server. Requests go directly from your browser to Google Gemini using your key. Charts by Chart.js. Tone: warm, precise, optimistic, with clear uncertainty bands.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script>
+(function(){
+  "use strict";
+  const $ = function(s){ return document.querySelector(s); };
+  const dadInput=$('#dadInput'), momInput=$('#momInput');
+  const btnDadPick=$('#btnDadPick'), btnDadClear=$('#btnDadClear');
+  const btnMomPick=$('#btnMomPick'), btnMomClear=$('#btnMomClear');
+  const dadThumbs=$('#dadThumbs'), momThumbs=$('#momThumbs');
+  const dadCount=$('#dadCount'), momCount=$('#momCount');
+  const apiKeyEl=$('#apiKey'), notesEl=$('#notes');
+  const btnRun=$('#btnRun'), btnSaveJson=$('#btnSaveJson');
+  const errEl=$('#err'), progEl=$('#prog');
+  const keyStatus=$('#keyStatus'), apiStatus=$('#apiStatus');
+
+  var dadFiles=[], momFiles=[], lastBundleJSON='';
+
+  function setError(msg){ errEl.textContent=msg||''; errEl.classList.toggle('show', !!msg); }
+  function setProgress(p){ progEl.style.width=(Math.max(0,Math.min(100,p))||0)+'%'; }
+  function b64(dataUrl){ var i=dataUrl.indexOf(','); return i>=0? dataUrl.slice(i+1): dataUrl; }
+  function validateKey(k){ if(!k) return false; var s=k.trim(); return /^AIza[0-9A-Za-z_\-]{20,}$/.test(s); }
+
+  document.addEventListener('DOMContentLoaded',function(){ var k=localStorage.getItem('geminiApiKey'); if(k) apiKeyEl.value=k; keyStatus.textContent = k? 'Key loaded from browser storage' : 'Key not set'; });
+  apiKeyEl.addEventListener('input',function(){ localStorage.setItem('geminiApiKey', apiKeyEl.value); keyStatus.textContent = validateKey(apiKeyEl.value)? 'Key looks valid' : 'Key not set or malformed'; });
+
+  function pick(input){ input.click(); }
+  function clear(which){ if(which==='dad'){ dadFiles=[]; dadThumbs.innerHTML='<small>No photos yet.</small>'; dadCount.textContent='0 selected'; dadInput.value=''; } else { momFiles=[]; momThumbs.innerHTML='<small>No photos yet.</small>'; momCount.textContent='0 selected'; momInput.value=''; } }
+  function renderThumb(parentEl, countEl, list, dataUrl){ if(list.length===1) parentEl.innerHTML=''; var img=new Image(); img.src=dataUrl; img.alt='photo'; parentEl.appendChild(img); countEl.textContent=list.length+' selected'; }
+  btnDadPick.addEventListener('click',function(){ pick(dadInput); });
+  btnMomPick.addEventListener('click',function(){ pick(momInput); });
+  btnDadClear.addEventListener('click',function(){ clear('dad'); });
+  btnMomClear.addEventListener('click',function(){ clear('mom'); });
+  dadInput.addEventListener('change', function(e){ var list=Array.from(e.target.files||[]).slice(0,5); clear('dad'); list.forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ dadFiles.push({file:f,dataUrl:ev.target.result}); renderThumb(dadThumbs,dadCount,dadFiles,ev.target.result); }; r.readAsDataURL(f); }); });
+  momInput.addEventListener('change', function(e){ var list=Array.from(e.target.files||[]).slice(0,5); clear('mom'); list.forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ momFiles.push({file:f,dataUrl:ev.target.result}); renderThumb(momThumbs,momCount,momFiles,ev.target.result); }; r.readAsDataURL(f); }); });
+
+  const TRAITS = [
+    {c:'P1', name:'Facial Thirds Balance', cat:'Facial Proportions'},
+    {c:'P2', name:'Facial Fifths Width', cat:'Facial Proportions'},
+    {c:'P3', name:'fWHR', cat:'Facial Proportions'},
+    {c:'P4', name:'Chin Projection', cat:'Facial Proportions'},
+    {c:'P5', name:'Jaw Angle & Width', cat:'Facial Proportions'},
+    {c:'D6', name:'Midface Proportion', cat:'Facial Proportions'},
+    {c:'D7', name:'Zygomatic Prominence', cat:'Facial Proportions'},
+    {c:'O20', name:'Bilateral Symmetry', cat:'Facial Proportions'},
+    {c:'Y19', name:'Hairline & Density', cat:'Hair'},
+    {c:'S11', name:'Skin Texture', cat:'Skin'},
+    {c:'S12', name:'Skin Tone Uniformity', cat:'Skin'},
+    {c:'D8', name:'Nasal Harmony', cat:'Nose'},
+    {c:'D9', name:'Eye Shape & Aperture', cat:'Eyes'},
+    {c:'D10', name:'Eye Spacing & Tilt', cat:'Eyes'},
+    {c:'S13', name:'Periorbital Volume', cat:'Eyes'},
+    {c:'S14', name:'Periorbital Discoloration', cat:'Eyes'},
+    {c:'Y15', name:'Brow Frame', cat:'Eyes'},
+    {c:'Y16', name:'Smile Dynamics', cat:'Mouth & Smile'},
+    {c:'Y17', name:'Dental Alignment', cat:'Mouth & Smile'},
+    {c:'Y18', name:'Lip Ratio & Form', cat:'Mouth & Smile'}
+  ];
+  const CAT_ORDER=['Eyes','Mouth & Smile','Facial Proportions','Hair','Skin','Nose'];
+  const CAT_W={ 'Eyes':0.35, 'Mouth & Smile':0.31, 'Facial Proportions':0.15, 'Hair':0.10, 'Skin':0.05, 'Nose':0.05 };
+
+  function hFor(code){ if(/^P/.test(code)) return 0.65; if(/^D/.test(code)) return 0.60; if(/^S/.test(code)) return 0.50; if(/^Y/.test(code)) return 0.55; if(/^O/.test(code)) return 0.70; return 0.60; }
+  function envU(code){ if(/^S(11|12|13|14)$/.test(code)) return 0.20; if(/^(Y16|Y17)$/.test(code)) return 0.30; return 0.10; }
+  function assort(d,m){ return (d>=4 && m>=4) ? 0.10 : 0.0; }
+  function regress(d,m){ return (d>=4 || m>=4) ? 0.10 : 0.20; }
+  function sexAdj(code, sex){ return /^(P3|P4|P5)$/.test(code) ? (sex==='male'? 0.10 : -0.10) : 0; }
+  function clamp(v,a,b){ a=(a==null?1:a); b=(b==null?5:b); return Math.max(a, Math.min(b, v)); }
+  const MU=3.0;
+  function lowerBound(code){ return /^S(11|12|13|14)$/.test(code) ? 2.8 : 2.6; }
+
+  function projectTrait(code, dad, mom, sex){
+    const maxParent = Math.max(dad, mom);
+    const avg = (dad+mom)/2;
+    const h=hFor(code), A=assort(dad,mom), E=envU(code), R=regress(dad,mom), S=sexAdj(code,sex);
+    const rv = 0.0;
+    const Min = clamp(MU + h*(avg-MU) + A + E - R + S + rv, lowerBound(code), 5);
+    const Proj = (3*maxParent + Min)/4;
+    return { proj:+Proj.toFixed(2), min:+Min.toFixed(2), max:+maxParent.toFixed(2) };
+  }
+
+  function catMeans(traitMap){ const cats={}; CAT_ORDER.forEach(function(c){cats[c]=[];}); TRAITS.forEach(function(t){ cats[t.cat].push(traitMap[t.c]); }); const out={}; CAT_ORDER.forEach(function(c){ var arr=cats[c]; out[c]= arr.length? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }); return out; }
+  function weightedOverall(cat){ var w=0, s=0; CAT_ORDER.forEach(function(k){ s += (cat[k]||0)*CAT_W[k]; w += CAT_W[k]; }); return s/(w||1); }
+  function indexFromOverall(over5){ return Math.max(0, Math.min(100, (over5-1)/4*100 )); }
+
+  function synergy(dadMap, momMap){ var v1=TRAITS.map(function(t){return (dadMap[t.c]-3.0);}); var v2=TRAITS.map(function(t){return (momMap[t.c]-3.0);}); var dot=v1.reduce(function(a,b,i){return a+b*v2[i];},0); var n1=Math.sqrt(v1.reduce(function(a,b){return a+b*b;},0)); var n2=Math.sqrt(v2.reduce(function(a,b){return a+b*b;},0)); var cos = (n1*n2>0)? dot/(n1*n2):0; var comp = Math.max(0, 1 - cos); var both=catMeans(Object.fromEntries(TRAITS.map(function(t){return [t.c,(dadMap[t.c]+momMap[t.c])/2];}))); var balance = Object.values(both).filter(function(v){return v>=3.0;}).length / CAT_ORDER.length; var m=1 + 0.10*comp + 0.05*balance; if(m>1.15) m=1.15; if(m<1.0) m=1.0; return {comp:+comp.toFixed(2), balance:+balance.toFixed(2), m:+m.toFixed(3)}; }
+
+  function makePrompt(){
+    var s = "You are grading facial trait geometry for one adult. Score the following codes on a 1.0-5.0 scale in 0.1 increments. Return STRICT JSON with code:number (one decimal). Avoid defaulting to 3.0; use anchors.\n" +
+            "CODES: " + TRAITS.map(function(t){return t.c;}).join(', ') + "\n" +
+            "JSON ONLY.";
+    return s;
+  }
+
+  async function callGeminiScores(key, imgs){
+    if(!imgs.length) return {};
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(key);
+    const prompt = makePrompt();
+    const parts=[{text:prompt}];
+    imgs.forEach(function(img){ parts.push({ inline_data:{ mime_type: (img.file && img.file.type) || 'image/jpeg', data: b64(img.dataUrl) } }); });
+    const body={ contents:[{role:'user', parts:parts}], generationConfig:{ responseMimeType:'application/json', temperature:0.2 } };
+    apiStatus.textContent = 'Sending to Gemini...';
+    const res=await fetch(endpoint,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    if(!res.ok){ apiStatus.textContent='Gemini request failed'; throw new Error('Gemini HTTP '+res.status); }
+    apiStatus.textContent = 'Gemini received. Analyzing...';
+    const j=await res.json();
+    const txt=(j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts)? j.candidates[0].content.parts.map(function(p){return p.text||'';}).join('').trim() : '';
+    var obj={};
+    try { obj = JSON.parse(txt); apiStatus.textContent='Gemini responded'; }
+    catch(e){ apiStatus.textContent='Gemini returned non-JSON'; }
+    return obj||{};
+  }
+
+  function antiCollapseAdjust(map){
+    const vals = TRAITS.map(function(t){ return map[t.c]; }).filter(function(v){ return typeof v==='number'; });
+    const inside = vals.filter(function(v){ return v>=2.9 && v<=3.1; }).length;
+    if(inside/TRAITS.length >= 0.7){
+      const cat = catMeans(map); const over = weightedOverall(cat);
+      const target = 3.9; const b = target - over;
+      TRAITS.forEach(function(t){ map[t.c] = clamp((map[t.c]||3.0) + b, 1, 5); });
+      map.__calibrated = true;
+    }
+    return map;
+  }
+
+  // build bell curve chart
+  var bellChart=null;
+  function makeBell(canvas, idxD, idxS){
+    if(bellChart) bellChart.destroy();
+    // normal curve points on index scale 0-100 with mu=60, sd=15
+    var mu=60, sd=15; var xs=[]; var ys=[]; for(var x=0; x<=100; x+=1){ xs.push(x); var y=Math.exp(-0.5*Math.pow((x-mu)/sd,2))/(sd*Math.sqrt(2*Math.PI)); ys.push(y); }
+    // scale y into 0-1 range for prettier chart
+    var ymax=Math.max.apply(null, ys); ys=ys.map(function(v){return v/ymax;});
+    // plugin to draw vertical lines at daughter and son
+    var vline = { id:'vline', afterDraw:function(chart){ var xScale=chart.scales.x; var yScale=chart.scales.y; var ctx=chart.ctx; [ {x:idxD,color:'#17c3e2',label:'Daughter'}, {x:idxS,color:'#f59e0b',label:'Son'} ].forEach(function(ln){ var px=xScale.getPixelForValue(ln.x); ctx.save(); ctx.strokeStyle=ln.color; ctx.setLineDash([6,4]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px, yScale.top); ctx.lineTo(px, yScale.bottom); ctx.stroke(); ctx.fillStyle=ln.color; ctx.font='12px Inter, system-ui, sans-serif'; ctx.textAlign='center'; ctx.fillText(ln.label+': '+ln.x.toFixed(1), px, yScale.top+12); ctx.restore(); }); } };
+    Chart.register(vline);
+    bellChart = new Chart(canvas.getContext('2d'),{
+      type:'line',
+      data:{ labels: xs, datasets: [{ label:'Population', data: ys, fill:true, pointRadius:0 }] },
+      options:{ responsive:true, plugins:{ legend:{display:false} }, scales:{ x:{ min:0, max:100, ticks:{ color:'#a9b0bf' } }, y:{ display:false, min:0, max:1 } } }
+    });
+  }
+
+  // radar helpers
+  var radarMom=null, radarDad=null;
+  function mkRadar(el,labels,data){ var ctx=el.getContext('2d'); return new Chart(ctx,{type:'radar', data:{labels:labels,datasets:[{label:'',data:data}]}, options:{responsive:true,plugins:{legend:{display:false}},scales:{r:{angleLines:{color:'#202534'},grid:{color:'#202534'},pointLabels:{color:'#a9b0bf'},suggestedMin:1,suggestedMax:5}}}}); }
+
+  function renderCriteriaTable(rows){ var tbody=document.querySelector('#critTable tbody'); tbody.innerHTML=''; rows.forEach(function(r){ var tr=document.createElement('tr'); function td(t){ var el=document.createElement('td'); el.textContent=t; return el; } tr.appendChild(td(r.code)); tr.appendChild(td(r.name)); tr.appendChild(td(r.dad.toFixed(2))); tr.appendChild(td(r.mom.toFixed(2))); tr.appendChild(td(r.dtr.proj.toFixed(2))); tr.appendChild(td(r.dtr.min.toFixed(2))); tr.appendChild(td(r.dtr.max.toFixed(2))); tr.appendChild(td(r.son.proj.toFixed(2))); tr.appendChild(td(r.son.min.toFixed(2))); tr.appendChild(td(r.son.max.toFixed(2))); tbody.appendChild(tr); }); }
+
+  function scenarioCards(sex, rows, syn){
+    // build trait maps by scenario
+    var mapMin={}, mapProj={}, mapMax={};
+    rows.forEach(function(r){ mapMin[r.code] = (sex==='female'? r.dtr.min : r.son.min); mapProj[r.code]=(sex==='female'? r.dtr.proj : r.son.proj); mapMax[r.code]=(sex==='female'? r.dtr.max : r.son.max); });
+    function overallFromMap(m){ var cat=catMeans(m); var over=weightedOverall(cat); if(sex==='female'||sex==='male'){ /* apply synergy only to non-min */ } return over; }
+    var overMin = weightedOverall(catMeans(mapMin));
+    var overProj = Math.min(5, weightedOverall(catMeans(mapProj)) * syn.m);
+    var overMax = Math.min(5, weightedOverall(catMeans(mapMax)) * syn.m);
+    function asCard(title, over){ var idx=indexFromOverall(over).toFixed(1); var html='<span class="pill">'+title+': index '+idx+' - overall '+over.toFixed(2)+' / 5</span>'; return html; }
+    return asCard('Minimin', overMin) + ' ' + asCard('Optimized Harmony', overProj) + ' ' + asCard('Maximax', overMax);
+  }
+
+  function composeReport(bundle){
+    var daughterIndex=bundle.daughterIndex, sonIndex=bundle.sonIndex, momIndex=bundle.momIndex, dadIndex=bundle.dadIndex, rows=bundle.rows, synergy=bundle.synergy;
+    var deltas = rows.map(function(r){ var avg=(r.dad+r.mom)/2; return {name:r.name, dLift:r.dtr.proj-avg, sLift:r.son.proj-avg, dMin:r.dtr.min, sMin:r.son.min}; });
+    function topN(arr,key,n){ return arr.slice().sort(function(a,b){return b[key]-a[key];}).slice(0,n).map(function(x){return x.name;}).join(', '); }
+    function lowN(arr,key,n){ return arr.slice().sort(function(a,b){return a[key]-b[key];}).slice(0,n).map(function(x){return x.name;}).join(', '); }
+
+    var dDrivers = topN(deltas,'dLift',3), sDrivers=topN(deltas,'sLift',3);
+    var dCues = lowN(deltas,'dMin',2), sCues = lowN(deltas,'sMin',2);
+
+    var p1 = 'Thanks for trusting us with your photos. Here is the short version: this pairing leans strong. The daughter index lands near '+daughterIndex.toFixed(1)+' and the son around '+sonIndex.toFixed(1)+'. Both sit well above the middle of the curve. Parents benchmark at Mom '+momIndex.toFixed(1)+' and Dad '+dadIndex.toFixed(1)+'.';
+    var p2 = 'What drives the optimism: your strengths stack rather than collide. When two faces bring different advantages, the overlap creates room for harmony. Our model gives more weight to the stronger parent for each feature, while still protecting a realistic floor so expectations do not run away. It reflects what families see over time - better knowledge, small habits, and good care nudging outcomes upward.';
+    var p3 = 'For the daughter, the biggest lifts likely come from '+dDrivers+'. Easy attention wins are '+dCues+'. For the son, the heavy hitters are '+sDrivers+', with quick wins around '+sCues+'. Think of these as nudges rather than mandates. They are the places where a bit of care tends to pay back the fastest.';
+    var p4 = 'How to read the numbers: each trait is scored on a 1 to 5 scale in fine 0.1 steps from multiple photos. We roll traits into six easy buckets - eyes, mouth and smile, facial proportions, hair, skin, and nose - and then into a single overall on a 100 index. The projections lean optimistic by design because real life includes orthodontics, skincare, sleep, and styling. But the lower bounds matter too. They are the guardrails that keep us honest.';
+    var p5 = 'We also calculate a small synergy bonus when the parents complement each other. Here that bonus is about '+Math.round((synergy.m-1)*100)+' percent. It does not invent points out of thin air; it simply recognizes when bone structure from one parent and soft tissue from the other create a cleaner fit than either face alone. We cap the effect so the story stays grounded.';
+    var p6 = 'Scenario view: Minimin shows the conservative lane if most traits drift toward the floor. Optimized Harmony is the most likely path - it uses the projected traits and applies the synergy bonus at the very end. Maximax shows the best plausible draw with the same cap on optimism. Read them together like a forecast band rather than a promise.';
+    var p7 = 'Practical use: treat the low-end notes as small levers you can control over the years - good sleep, sun habits, a gentle skincare routine, and timely dental care. They do not replace genetics, but they change how genes show up. The confident, kind way a child carries their face also matters. We keep the tone warm and precise because the aim here is helpful guidance, not judgement.';
+    var p8 = 'Bottom line: you have a balanced foundation with real room to shine. If you decide to move forward together, your future child is likely to land high on look and harmony. The range bars keep expectations fair; the narrative explains where the wins come from; the curve shows where you sit in the crowd. Use it to make thoughtful choices, and feel free to revisit as new photos or better light come in.';
+
+    var html = '<p>'+p1+'</p><p>'+p2+'</p><p>'+p3+'</p><p>'+p4+'</p><p>'+p5+'</p><p>'+p6+'</p><p>'+p7+'</p><p>'+p8+'</p>'+
+      '<p class="status">Synergy bonus applied: <b>' + Math.round((synergy.m-1)*100) + '%</b> (complementarity ' + synergy.comp + ', balance ' + synergy.balance + ').</p>';
+    return html;
+  }
+
+  async function run(){
+    try{
+      setError(''); setProgress(6); apiStatus.textContent='Validating input...';
+      if(dadFiles.length<3 || momFiles.length<3) throw new Error('Please add 3 to 5 photos for dad and 3 to 5 photos for mom.');
+      const key=apiKeyEl.value.trim(); if(!validateKey(key)) throw new Error('Enter a valid Gemini API key (begins with AIza...).');
+      apiStatus.textContent='Key accepted. Preparing requests...';
+
+      setProgress(16);
+      const dadRaw = await callGeminiScores(key, dadFiles).catch(function(){return {};});
+      setProgress(42);
+      const momRaw = await callGeminiScores(key, momFiles).catch(function(){return {};});
+      setProgress(58);
+
+      const dad={}; const mom={};
+      TRAITS.forEach(function(t){ dad[t.c] = (typeof dadRaw[t.c]==='number')? +dadRaw[t.c] : 3.0; mom[t.c] = (typeof momRaw[t.c]==='number')? +momRaw[t.c] : 3.0; });
+
+      antiCollapseAdjust(dad); antiCollapseAdjust(mom);
+
+      const rows = TRAITS.map(function(t){
+        const dtr = projectTrait(t.c, dad[t.c], mom[t.c], 'female');
+        const son = projectTrait(t.c, dad[t.c], mom[t.c], 'male');
+        return { code:t.c, name:t.name, dad:dad[t.c], mom:mom[t.c], dtr:dtr, son:son };
+      });
+
+      const dtrMap = Object.fromEntries(rows.map(function(r){ return [r.code, r.dtr.proj]; }));
+      const sonMap = Object.fromEntries(rows.map(function(r){ return [r.code, r.son.proj]; }));
+      const catD = catMeans(dtrMap); const catS = catMeans(sonMap);
+      const catMom = catMeans(mom); const catDad = catMeans(dad);
+
+      let overD = weightedOverall(catD); let overS = weightedOverall(catS);
+      const overMom = weightedOverall(catMom); const overDad = weightedOverall(catDad);
+
+      const syn = synergy(dad, mom);
+      overD = Math.min(5, overD * syn.m); overS = Math.min(5, overS * syn.m);
+
+      const idxD = indexFromOverall(overD); const idxS = indexFromOverall(overS);
+      const idxMom = indexFromOverall(overMom); const idxDad = indexFromOverall(overDad);
+
+      // charts: bell curve and parent radars
+      makeBell(document.getElementById('bell'), idxD, idxS);
+      if(radarMom) radarMom.destroy(); if(radarDad) radarDad.destroy();
+      radarMom = mkRadar(document.getElementById('radarMom'), CAT_ORDER, CAT_ORDER.map(function(k){ return +catMom[k].toFixed(2); }));
+      radarDad = mkRadar(document.getElementById('radarDad'), CAT_ORDER, CAT_ORDER.map(function(k){ return +catDad[k].toFixed(2); }));
+
+      document.getElementById('momTotal').textContent = 'Mom total: index ' + idxMom.toFixed(1) + ' (overall ' + (overMom).toFixed(2) + ' / 5)';
+      document.getElementById('dadTotal').textContent = 'Dad total: index ' + idxDad.toFixed(1) + ' (overall ' + (overDad).toFixed(2) + ' / 5)';
+      document.getElementById('dtrTotal').textContent = 'Daughter total: index ' + idxD.toFixed(1) + ' (overall ' + (overD).toFixed(2) + ' / 5)';
+      document.getElementById('sonTotal').textContent = 'Son total: index ' + idxS.toFixed(1) + ' (overall ' + (overS).toFixed(2) + ' / 5)';
+      document.getElementById('synPill').textContent = 'Synergy bonus: +' + Math.round((syn.m-1)*100) + '%';
+
+      renderCriteriaTable(rows);
+
+      // scenarios
+      document.getElementById('dScen').innerHTML = scenarioCards('female', rows, syn);
+      document.getElementById('sScen').innerHTML = scenarioCards('male', rows, syn);
+
+      const bundle = { daughterIndex: idxD, sonIndex: idxS, momIndex: idxMom, dadIndex: idxDad, rows: rows, synergy: syn, notes: notesEl.value||'' };
+      document.getElementById('textReport').innerHTML = composeReport(bundle);
+
+      lastBundleJSON = JSON.stringify(bundle, null, 2);
+      setProgress(100); apiStatus.textContent='Done. You can download JSON.';
+    } catch(e){ setError(String(e.message||e)); setProgress(0); apiStatus.textContent='Stopped with an error.'; }
+  }
+
+  btnRun.addEventListener('click', run);
+  btnSaveJson.addEventListener('click', function(ev){ ev.stopImmediatePropagation(); const text = lastBundleJSON || ''; const blob=new Blob([text], {type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='futurechild-v5.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 250); });
+})();
+</script>
+</body>
+</html>
