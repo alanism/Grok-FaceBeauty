@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Facial Beauty Consultant</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#141821; --text:#e6e8ee; --sub:#a9b0bf; --muted:#6b7280;
+    --accent:#17c3e2; --accent2:#f59e0b; --yellow:#f6e05e; --border:#202534;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0; background:var(--bg); color:var(--text); font:16px system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; line-height:1.4;}
+  .wrap{max-width:980px; margin:24px auto; padding:0 16px;}
+  header{margin-bottom:16px; text-align:center}
+  h1{font-size:28px; margin:6px 0 4px;}
+  h2{font-size:18px; margin:0 0 8px;}
+  .kicker{color:var(--accent); font-size:12px; letter-spacing:.12em; text-transform:uppercase}
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px;}
+  label{font-size:13px; color:var(--sub); display:block; margin-top:8px;}
+  input[type="password"],input[type="number"],input[type="text"],select{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text);
+  }
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#0b0e14; color:var(--text); cursor:pointer;}
+  .btn.primary{background:var(--text); color:#0b0e14; font-weight:700;}
+  .btn:disabled{opacity:.6; cursor:not-allowed}
+  .hint{color:var(--muted); font-size:12px}
+  .error{display:none; margin-top:8px; padding:8px 10px; border:1px solid #7f1d1d; background:#3f1d1d; color:#fecaca; border-radius:8px;}
+  .error.show{display:block}
+  .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center}
+  .thumbs img{width:84px; height:84px; object-fit:cover; border:1px solid var(--border); border-radius:8px;}
+  .tag{display:inline-block; font-size:12px; border:1px solid var(--border); padding:2px 6px; border-radius:999px; color:var(--sub)}
+  .bar{height:8px; background:#0b0e14; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+  .bar span{display:block; height:100%; background:var(--accent2); width:0%}
+  .flex{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .mt-8{margin-top:16px} .mt-12{margin-top:24px}
+  small{color:var(--sub)}
+  .foot{color:var(--muted); font-size:12px; text-align:center; margin-top:16px}
+  canvas{max-width:100%; height:auto; background:#0b0e14; border:1px solid var(--border); border-radius:12px;}
+  ul.recos{margin:8px 0 0 18px;} ul.recos li{margin:6px 0;}
+  .overall{color:var(--yellow); font-weight:800; margin:0 0 6px;}
+  .output{white-space:pre-wrap; line-height:1.55; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:#0b0e14;}
+  .big-gallery{display:flex; gap:12px; flex-wrap:wrap; margin-top:12px}
+  .big-gallery img{width:450px; max-width:100%; border-radius:12px; border:1px solid var(--border); object-fit:cover;}
+  textarea{display:none;} /* we no longer use a textarea for the script */
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Private beta • All-local with your Gemini key</div>
+    <h1>Your Facial Beauty Consultant</h1>
+    <small>We analyze 20+ signals from your photos using a structured rubric, then write a script just for you. Educational, not medical advice.</small>
+    <div style="margin-top:10px;">
+      <a href="index.html" class="btn">← Back to Look Score</a>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label>Upload photos (3–7 JPG/PNG)</label>
+        <div class="flex">
+          <button id="btnPick" class="btn">Choose photos</button>
+          <button id="btnClear" class="btn">Clear</button>
+          <span class="tag" id="countTag">0 selected</span>
+        </div>
+        <input id="fileInput" type="file" accept="image/jpeg,image/png" multiple style="display:none">
+        <div id="thumbs" class="thumbs"><small>No photos yet.</small></div>
+      </div>
+      <div>
+        <label>Gemini API key</label>
+        <input id="apiKey" type="password" placeholder="AIza...">
+        <small class="hint">Stored in your browser only.</small>
+
+        <div class="row mt-8">
+          <div>
+            <label>Sex</label>
+            <select id="sex"><option value="female">Woman</option><option value="male" selected>Man</option></select>
+          </div>
+          <div>
+            <label>Age</label>
+            <input id="age" type="number" min="10" max="100" value="30">
+          </div>
+        </div>
+
+        <label class="mt-8">Ethnicity (optional)</label>
+        <input id="ethnicity" type="text" placeholder="e.g., Vietnamese">
+
+        <label class="mt-8">Beauty standard</label>
+        <select id="region">
+          <option value="US" selected>US</option>
+          <option value="EastAsia">East Asia</option>
+          <option value="SEAsia">SE Asia</option>
+          <option value="EU">EU</option>
+          <option value="LATAM">LATAM</option>
+          <option value="MENA">MENA</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row-3 mt-12">
+      <div>
+        <label>Angle</label>
+        <select id="angle">
+          <option value="general" selected>General audience</option>
+          <option value="dating">Dating glow-up</option>
+          <option value="executive">Executive presence</option>
+          <option value="on_camera">On-camera / media</option>
+        </select>
+      </div>
+      <div></div><div></div>
+    </div>
+
+    <div class="mt-12 flex">
+      <button id="btnBuild" class="btn primary">Generate 12-minute Script</button>
+      <button id="btnCopy"  class="btn">Copy</button>
+      <button id="btnSave"  class="btn">Download .txt</button>
+      <span class="bar" style="flex:1"><span id="prog"></span></span>
+    </div>
+    <div id="err" class="error"></div>
+  </section>
+
+  <!-- INSIGHTS: Overall + Radar + Recos + Big images -->
+  <section class="panel mt-12">
+    <h2 id="overall" class="overall">Overall: -- / 100</h2>
+    <div class="row">
+      <div>
+        <h2>Category Radar (0–100)</h2>
+        <canvas id="radar" width="420" height="420" aria-label="Category radar chart"></canvas>
+      </div>
+      <div>
+        <h2>Top Recommendations</h2>
+        <ul id="recos" class="recos"><li><small>Will populate after generation.</small></li></ul>
+      </div>
+    </div>
+    <div class="mt-12">
+      <h2>Your Photos</h2>
+      <div id="bigGallery" class="big-gallery"></div>
+    </div>
+  </section>
+
+  <section class="panel mt-12">
+    <label>Script</label>
+    <div id="out" class="output" aria-live="polite"></div>
+  </section>
+
+  <div class="foot">No uploads to our server. Requests go directly from your browser to Google’s Gemini endpoint using your key.</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ===== Elements
+  const $ = sel => document.querySelector(sel);
+  const fileInput = $('#fileInput');
+  const btnPick = $('#btnPick');
+  const btnClear = $('#btnClear');
+  const thumbs = $('#thumbs');
+  const countTag = $('#countTag');
+  const apiKeyEl = $('#apiKey');
+  const sexEl = $('#sex');
+  const ageEl = $('#age');
+  const ethnicityEl = $('#ethnicity');
+  const regionEl = $('#region');
+  const angleEl = $('#angle');
+  const outEl = $('#out');
+  const errEl = $('#err');
+  const progEl = document.getElementById('prog');
+  const radar = document.getElementById('radar');
+  const recosEl = document.getElementById('recos');
+  const overallEl = document.getElementById('overall');
+  const bigGallery = document.getElementById('bigGallery');
+
+  let files = [];
+
+  // ===== Helpers
+  function setError(msg){ errEl.textContent = msg || ''; errEl.classList.toggle('show', !!msg); }
+  function setProgress(p){ progEl.style.width = (Math.max(0, Math.min(100, p)) || 0) + '%'; }
+  function validateKey(k){
+    if(!k) return false;
+    const s = k.trim().replace(/^["']|["']$/g, '');
+    if(/^https?:\/\//i.test(s) || /^file:\/\//i.test(s)) return false;
+    return /^AIza[0-9A-Za-z_\-]{20,}$/.test(s);
+  }
+  function b64(dataUrl){ const i = dataUrl.indexOf(','); return i >= 0 ? dataUrl.slice(i+1) : dataUrl; }
+
+  // Persist key locally
+  document.addEventListener('DOMContentLoaded', ()=> {
+    const k = localStorage.getItem('geminiApiKey');
+    if(k) apiKeyEl.value = k;
+  });
+  apiKeyEl.addEventListener('input', ()=> localStorage.setItem('geminiApiKey', apiKeyEl.value));
+
+  // ===== Photo picking
+  btnPick.addEventListener('click', ()=> fileInput.click());
+  btnClear.addEventListener('click', ()=> resetPhotos());
+
+  fileInput.addEventListener('change', (e)=>{
+    const list = Array.from(e.target.files || []);
+    resetPhotos(true);
+    list.slice(0,7).forEach((file, idx)=>{
+      const r = new FileReader();
+      r.onload = ev => {
+        files.push({ file, dataUrl: ev.target.result });
+        renderThumb(ev.target.result, idx);
+        renderBigGallery(); // show large versions immediately
+      };
+      r.readAsDataURL(file);
+    });
+    fileInput.value = '';
+  });
+
+  function resetPhotos(keepPicker){
+    files = [];
+    thumbs.innerHTML = '<small>No photos yet.</small>';
+    bigGallery.innerHTML = '';
+    countTag.textContent = '0 selected';
+    if(!keepPicker) fileInput.value = '';
+  }
+
+  function renderThumb(dataUrl, ix){
+    if(files.length === 1) thumbs.innerHTML = '';
+    const img = new Image();
+    img.src = dataUrl; img.alt = 'Photo ' + (ix+1);
+    thumbs.appendChild(img);
+    countTag.textContent = files.length + ' selected';
+  }
+
+  function renderBigGallery(){
+    bigGallery.innerHTML = '';
+    files.forEach((f,i)=>{
+      const im = new Image();
+      im.src = f.dataUrl; im.alt = 'Uploaded photo ' + (i+1);
+      bigGallery.appendChild(im);
+    });
+  }
+
+  // ===== Rubric
+  function maleCriteria(){ return [
+    {"code":"P2","bucket":"P","name":"Symmetry (M)"},
+    {"code":"O19","bucket":"O","name":"Averageness (M)"},
+    {"code":"P1","bucket":"P","name":"Facial Thirds & Index (M)"},
+    {"code":"P3","bucket":"P","name":"fWHR & Brow-Orbital Masculinity"},
+    {"code":"D6","bucket":"D","name":"Jawline Definition (M)"},
+    {"code":"P3a","bucket":"P","name":"Ramus Height & Gonial Angle"},
+    {"code":"P4","bucket":"P","name":"Chin Projection & Shape (M)"},
+    {"code":"P5","bucket":"P","name":"Jaw Width Ratio (M)"},
+    {"code":"D7","bucket":"D","name":"Zygomatic Prominence (M)"},
+    {"code":"D8","bucket":"D","name":"Nose Proportion & Shape (M)"},
+    {"code":"D9","bucket":"D","name":"Eyes (Shape/Spacing/Tilt) (M)"},
+    {"code":"D10","bucket":"D","name":"Eyebrows (M)"},
+    {"code":"S14","bucket":"S","name":"Periorbital Support (M)"},
+    {"code":"D11","bucket":"D","name":"Lips (Form/Ratio) (M)"},
+    {"code":"Y16","bucket":"Y","name":"Teeth & Smile (M)"},
+    {"code":"Y17","bucket":"Y","name":"Hairline/Density or Shaved Aesthetic"},
+    {"code":"S11","bucket":"S","name":"Skin Texture (M)"},
+    {"code":"S12","bucket":"S","name":"Skin Tone Evenness (M)"},
+    {"code":"S13","bucket":"S","name":"Facial Leanness (M)"},
+    {"code":"Y18","bucket":"Y","name":"Cervico-mental Angle (M)"}
+  ];}
+
+  function femaleCriteria(){ return [
+    {"code":"P1","bucket":"P","name":"Face Shape & Proportions"},
+    {"code":"P2","bucket":"P","name":"Midface Width/Height"},
+    {"code":"Y18","bucket":"Y","name":"Cervico-mental Angle"},
+    {"code":"D6","bucket":"D","name":"Jawline Definition (F)"},
+    {"code":"P3","bucket":"P","name":"Chin Shape & Projection"},
+    {"code":"P4","bucket":"P","name":"Gonial/Jaw Angle (F)"},
+    {"code":"D7","bucket":"D","name":"Zygomatic Projection & Ogee Curve"},
+    {"code":"D9","bucket":"D","name":"Periocular Shape (Almond)"},
+    {"code":"P5","bucket":"P","name":"Eye Spacing & Size Harmony"},
+    {"code":"Y16","bucket":"Y","name":"Canthal Tilt & Medial Canthus"},
+    {"code":"D10","bucket":"D","name":"Brow/Lash Frame"},
+    {"code":"D8","bucket":"D","name":"Nasal Harmony (F)"},
+    {"code":"D11","bucket":"D","name":"Lip Shape/Proportion"},
+    {"code":"Y17","bucket":"Y","name":"Dental Display & Smile"},
+    {"code":"S11","bucket":"S","name":"Skin Evenness/Texture"},
+    {"code":"S12","bucket":"S","name":"Facial Fat Distribution"},
+    {"code":"P1a","bucket":"P","name":"Upper Third (Forehead)"},
+    {"code":"O19","bucket":"O","name":"Overall Averageness/Harmony"},
+    {"code":"S15","bucket":"S","name":"Hair as Frame"},
+    {"code":"O20","bucket":"O","name":"Overall Presence"}
+  ];}
+
+  function groupsFor(sex){
+    if (sex === "male"){
+      return {
+        "Proportion":      { "criteria_codes": ["P2","O19","P1","P3","D6","P3a","P4","P5","D7","D8"] },
+        "Definition":      { "criteria_codes": ["D9","D10","S14","S11","S12","S13","Y18"] },
+        "SkinSoftTissue":  { "criteria_codes": ["S11","S12","S13","S14"] },
+        "Youthfulness":    { "criteria_codes": ["Y16","Y17","Y18"] },
+        "Harmony":         { "criteria_codes": ["O19"] }
+      };
+    }
+    return {
+      "Proportion":      { "criteria_codes": ["P1","P2","Y18","D6","P3","P4","D7","P1a","O19"] },
+      "Definition":      { "criteria_codes": ["D9","P5","Y16","D10","D8","D11"] },
+      "SkinSoftTissue":  { "criteria_codes": ["S11","S12","S15"] },
+      "Youthfulness":    { "criteria_codes": ["Y16","Y17","Y18"] },
+      "Harmony":         { "criteria_codes": ["O19","O20"] }
+    };
+  }
+
+  function makeUnifiedRubric(sex){
+    var sx = (sex === "male") ? "male" : "female";
+    var crit = (sx === "male") ? maleCriteria() : femaleCriteria();
+    return {
+      "scale": { "min": 1, "max": 5, "step": 0.25 },
+      "sex": sx,
+      "criteria": crit,
+      "groups": (sx === "male") ? { "male": groupsFor("male") } : { "female": groupsFor("female") },
+      "report": { "rationale_limit": 140 }
+    };
+  }
+
+  // ===== Style & Prompt (speak to user; no markdown; no PR; constraints as options)
+  function styleGuide(){
+    return `Speak directly to the person who uploaded these photos. Use "you".
+No audience framing, no references to viewers or subscribers.
+Do not use Markdown or asterisks—plain sentences only.
+Never use the words PR, public relations, crisis, or campaign.
+Offer non-invasive options (e.g., skincare, posture, lighting). Surgery/injectables/budget notes are optional considerations, not prescriptions.`;
+  }
+
+  function buildPrompt(params, rubric){
+    const sg = styleGuide();
+    const meta = JSON.stringify({
+      inputs:{
+        sex: params.sex, age: params.age, ethnicity: params.ethnicity, region_standard: params.region,
+        angle: params.angle
+      },
+      rubric: rubric
+    });
+
+    const system = `ROLE: Appearance coach writing directly to the client (second person "you").
+TASK: From the photos and rubric, infer a structured look analysis and write ~12-minute script (≈1650–1800 words).
+AUDIENCE: The single client only. Kind, precise, motivating. Educational, not medical advice.
+HARD RULES: Never use the words PR, public relations, crisis, or campaign. Do not use Markdown formatting or asterisks—plain text only.`;
+
+    const structure = `STRUCTURE:
+1) Hook (1–2 sentences) addressed to "you".
+2) Set the Stage — who you are (sex/age/region) and what was measured (20+ signals).
+3) TLDR — overall read + 3 leverage points.
+4) Buckets (P/D/S/Y/O): your top wins + 1 fix per bucket; simple explanation, then one pro insight.
+5) Action Plan (Weeks 1–12) — staged protocol; emphasize non-invasive habits and accessible products. Note that surgery/injectables are optional paths to research further, not required.
+6) Lifestyle & Camera Craft — posture, lighting, framing, grooming; 80/20 wins.
+7) Premortem — likely blockers & how to avoid them.
+8) Close — one first step for this week.`;
+
+    const outputFormat = `OUTPUT FORMAT:
+First print ONE compact JSON object on a single line with keys:
+{"categories":{"Proportion":0-100,"Definition":0-100,"SkinSoftTissue":0-100,"Youthfulness":0-100,"Harmony":0-100},"recommendations":["bullet 1","bullet 2", "..."]}
+Then on the next line print: ---
+Then print ONLY the final client-directed script in plain text.`;
+
+    return [system, "VOICE/TONE:", sg, structure, outputFormat, "DATA(JSON):", meta].join("\n\n");
+  }
+
+  // ===== Gemini
+  async function callGeminiText(key, prompt, images){
+    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(key);
+    const parts = [{ text: prompt }];
+    images.forEach(img => {
+      parts.push({ inline_data: { mime_type: img.file.type || 'image/jpeg', data: b64(img.dataUrl) } });
+    });
+    const payload = { contents:[{ role:"user", parts }], generationConfig:{ responseMimeType:"text/plain", temperature:0.5 } };
+    const res = await fetch(endpoint, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    if(!res.ok){ let t=""; try{t=await res.text();}catch{}; throw new Error("HTTP "+res.status+(t?": "+t:"")); }
+    const j = await res.json();
+    const text = j?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("").trim();
+    if(!text) throw new Error("Empty response from model");
+    return text;
+  }
+
+  // ===== Radar chart (with numeric labels)
+  function drawRadar(values){
+    const ctx = radar.getContext('2d');
+    const W = radar.width, H = radar.height;
+    const cx = W/2, cy = H/2;
+    const radius = Math.min(W,H)*0.38;
+    const axes = [
+      {label:'Proportion', angle:-90},
+      {label:'Definition', angle:-18},
+      {label:'Skin & Soft', angle:54},
+      {label:'Youth', angle:126},
+      {label:'Harmony', angle:198}
+    ];
+    ctx.clearRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle = '#2a3142'; ctx.lineWidth = 1;
+    for(let r=0.2;r<=1.0;r+=0.2){
+      ctx.beginPath();
+      for(let i=0;i<axes.length;i++){
+        const ang = axes[i].angle*Math.PI/180;
+        const nx = cx + Math.cos(ang)*(radius*r);
+        const ny = cy + Math.sin(ang)*(radius*r);
+        if(i===0) ctx.moveTo(nx,ny); else ctx.lineTo(nx,ny);
+      }
+      const ang0 = axes[0].angle*Math.PI/180;
+      ctx.lineTo(cx + Math.cos(ang0)*(radius*r), cy + Math.sin(ang0)*(radius*r));
+      ctx.stroke();
+    }
+    // Axes + labels
+    ctx.strokeStyle = '#394155';
+    axes.forEach(ax=>{
+      const ang = ax.angle*Math.PI/180;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx + Math.cos(ang)*radius, cy + Math.sin(ang)*radius); ctx.stroke();
+      ctx.fillStyle = '#a9b0bf'; ctx.font = '12px system-ui, sans-serif';
+      const lx = cx + Math.cos(ang)*(radius+16);
+      const ly = cy + Math.sin(ang)*(radius+16);
+      ctx.textAlign = Math.cos(ang)>0.2 ? 'left' : (Math.cos(ang)<-0.2 ? 'right' : 'center');
+      ctx.fillText(ax.label, lx, ly);
+    });
+    // Data polygon + value dots + numbers (orange)
+    const pts = axes.map(ax=>{
+      const v = Math.max(0, Math.min(100, values[ax.label] ?? 0));
+      const r = radius * (v/100);
+      const ang = ax.angle*Math.PI/180;
+      return {x: cx + Math.cos(ang)*r, y: cy + Math.sin(ang)*r, v};
+    });
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y); });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(23,195,226,0.15)'; ctx.strokeStyle = '#17c3e2'; ctx.lineWidth = 2;
+    ctx.fill(); ctx.stroke();
+    // points + value labels
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '12px system-ui, sans-serif';
+    pts.forEach(p=>{
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.fillText(String(Math.round(p.v)), p.x, p.y - 8);
+    });
+  }
+
+  function setRecos(list){
+    if(!Array.isArray(list) || list.length===0){ recosEl.innerHTML = '<li><small>No recommendations yet.</small></li>'; return; }
+    recosEl.innerHTML = '';
+    list.slice(0,7).forEach(t=>{ const li=document.createElement('li'); li.textContent=t; recosEl.appendChild(li); });
+  }
+
+  function safeParseJsonLine(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
+  function parseModelOutput(text){
+    const lines = (text||'').split(/\r?\n/);
+    if(lines.length<3) return {meta:null, script:text};
+    const meta = safeParseJsonLine(lines[0].trim());
+    if(!meta || lines[1].trim()!=='---') return {meta:null, script:text};
+    return {meta, script: lines.slice(2).join('\n')};
+  }
+
+  // ===== Build flow
+  document.getElementById('btnBuild').addEventListener('click', async ()=>{
+    try{
+      setError(''); setProgress(0); outEl.textContent = '';
+
+      if(files.length === 0) throw new Error('Add at least one photo.');
+      const key = (apiKeyEl.value || '').trim();
+      if(!key) throw new Error('Enter your Gemini API key.');
+      if(!validateKey(key)) throw new Error('Your API key looks invalid. It usually starts with AIza…');
+
+      const params = {
+        sex: sexEl.value, age: parseInt(ageEl.value || '30', 10),
+        ethnicity: (ethnicityEl.value || '').trim(), region: regionEl.value, angle: angleEl.value
+      };
+
+      setProgress(15);
+      const rubric = makeUnifiedRubric(params.sex);
+      const prompt = buildPrompt(params, rubric);
+      setProgress(35);
+
+      const text = await callGeminiText(key, prompt, files);
+      setProgress(70);
+
+      const parsed = parseModelOutput(text);
+      if(parsed.meta && parsed.meta.categories){
+        const vals = {
+          'Proportion': parsed.meta.categories.Proportion ?? 0,
+          'Definition': parsed.meta.categories.Definition ?? 0,
+          'Skin & Soft': parsed.meta.categories.SkinSoftTissue ?? 0,
+          'Youth': parsed.meta.categories.Youthfulness ?? 0,
+          'Harmony': parsed.meta.categories.Harmony ?? 0
+        };
+        drawRadar(vals);
+        const avg = Math.round(Object.values(vals).reduce((a,b)=>a+b,0)/5);
+        overallEl.textContent = 'Overall: ' + avg + ' / 100';
+        setRecos(parsed.meta.recommendations || []);
+      }else{
+        drawRadar({'Proportion':0,'Definition':0,'Skin & Soft':0,'Youth':0,'Harmony':0});
+        overallEl.textContent = 'Overall: -- / 100';
+        setRecos([]);
+      }
+
+      outEl.textContent = parsed.script || text; // plain text only
+      setProgress(100);
+    } catch(err){
+      console.error(err);
+      setError(String(err.message || err));
+      setProgress(0);
+    }
+  });
+
+  // Copy & Download from the div
+  document.getElementById('btnCopy').addEventListener('click', ()=>{
+    if(outEl.textContent) navigator.clipboard.writeText(outEl.textContent).catch(()=>{});
+  });
+  document.getElementById('btnSave').addEventListener('click', ()=>{
+    const blob = new Blob([outEl.textContent || ""], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'look-12min-script.txt';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 300);
+  });
+
+  // Initial empty radar
+  drawRadar({'Proportion':0,'Definition':0,'Skin & Soft':0,'Youth':0,'Harmony':0});
+})();
+</script>
+</body>
+</html>
